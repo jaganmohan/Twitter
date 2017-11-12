@@ -1,7 +1,11 @@
 defmodule TwitterClone.Server do
     use GenServer
 
-    def init() do
+    def start_link(opts) do
+        GenServer.start_link(__MODULE__, :ok, opts)
+    end
+
+    def init(opts) do
         #TODO state
     end
 
@@ -10,22 +14,31 @@ defmodule TwitterClone.Server do
         {:noreply, state}
     end
 
-    def handle_call({:query, query}, from, state) do
-        query.results = 
+    def tweet(twt) do
+        GenServer.cast(Server, {:publish, twt})
+    end
+
+    def getTweets(query) do
+        query = %{query | results:
         case query.type do
             :all ->
                 # query all tweets from followers from datastore
+                GenServer.cast(Datastore, {:getAllTweets, query.origin})
             :hashtags ->
                 # query all tags with that particular hashtag
+                GenServer.cast(Datastore, {:getHashTagTweets, query.origin})
             :mentions ->
                 # query all tweets with list of mentions from datastore
+                GenServer.cast(Datastore, {:getMentionsTweets, query.origin})
             _ -> []
         end
-        {:reply, query, state}
+        }
+        query
     end
 
     def distTweets(tweet) do
         # Get list of subscribers for the origin
+        followers = DataStore.getFollowers(tweet.origin)
         for follower <- followers do
             # TODO check if user is live/logged in
             GenServer.cast(follower, {:dist, tweet})

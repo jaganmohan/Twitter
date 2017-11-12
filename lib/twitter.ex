@@ -4,5 +4,8 @@ defmodule Twitter do
   Documentation for Twitter.
   """
 
+  def start(_type, _args) do
+    
+  end
 
 end

@@ -3,6 +3,7 @@ defmodule TwitterClient.Client do
 
     def init() do
         #TODO define state
+        {:ok, %{}}
     end
 
     def handle_cast({:dist, tweet},state) do
@@ -15,17 +16,19 @@ defmodule TwitterClient.Client do
     def publishTweet(tweet) do
         # publish when user is logged in
         # TODO construct tweet randomly and call this method from elsewhere
+        tweet = 
         if tweet == nil do
-            tweet = %Util.Tweet{}
+            %Util.Tweet{}
         end
-        GenServer.cast(server, {:publish, tweet})
+        GenServer.cast(Server, {:publish, tweet})
     end
 
     def queryTweets(query) do
         # construct query if query is nil
+        query = 
         if query == nil do
-            query = %Util.Query{}
+            %Util.Query{}
         end
-        GenServer.call(server, {:query, query})
+        GenServer.call(Server, {:query, query})
     end
 end
