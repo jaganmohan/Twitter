@@ -1,7 +1,12 @@
 defmodule TwitterClient.Client do
     use GenServer
 
-    def init() do
+    def start_link(opts) do
+        GenServer.start_link(__MODULE__, :ok, opts)
+    end
+
+    def init(opts) do
+        IO.puts("Initializing Client .....")
         #TODO define state
         {:ok, %{}}
     end

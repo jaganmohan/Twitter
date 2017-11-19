@@ -2,6 +2,7 @@ defmodule TwitterClone.Datastore do
     use GenServer
 
     def start_link(opts) do
+        IO.puts("Initializing Datastore .....")        
         GenServer.start_link(__MODULE__, :ok, opts)
     end
 
@@ -16,10 +17,18 @@ defmodule TwitterClone.Datastore do
         {:ok, tables}
     end
 
+    def handle_call({:getFollowers, user}, from, tables) do
+        clientsTbl = tables["clientsTbl"]
+        # TODO get followers
+        followers = []
+        {:reply, followers, tables}
+    end
+
     def handle_call({:getAllTweets, user}, from, tables) do
         tweetsTbl = tables["tweetsTbl"]
         clientTweets = tables["clientTweets"]
         # TODO
+        tweets = []
         {:reply, tweets, tables}
     end
 
@@ -27,6 +36,7 @@ defmodule TwitterClone.Datastore do
         tweetsTbl = tables["tweetsTbl"]
         clientTweets = tables["clientTweets"]
         # TODO
+        tweets = []
         {:reply, tweets, tables}
     end
 
@@ -34,6 +44,7 @@ defmodule TwitterClone.Datastore do
         tweetsTbl = tables["tweetsTbl"]
         clientTweets = tables["clientTweets"]
         # TODO
+        tweets = []
         {:reply, tweets, tables}
     end
 
@@ -48,12 +59,6 @@ defmodule TwitterClone.Datastore do
         clientsTbl = tables["clientsTbl"]
         # TODO add followers
         {:noreply, tables}
-    end
-
-    def getFollowers(user) do
-        clientsTbl = tables["clientsTbl"]
-        # TODO get followers
-        followers
     end
     
 end
