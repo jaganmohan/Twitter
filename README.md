@@ -2,6 +2,19 @@
 
 **TODO: Add description**
 
+## Compile application
+To run the application go to the home directory "twitter" and run the following command
+- mix compile
+
+## Start Application
+To run the application, run the following command in home directory
+- iex -S mix
+
+## Stop Application
+To stop the application, run the following commands
+- Application.stop(:twitter)
+- Application.stop(:logger)
+
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
