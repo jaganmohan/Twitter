@@ -11,6 +11,16 @@ defmodule TwitterClone.Server do
         {:ok, %{}}
     end
 
+    def handle_cast({:register, user}, state) do
+        GenServer.cast(DataStore, {:register, user})
+        {:noreply, state}
+    end
+
+    def handle_cast({:setFollowers, user, followers}, state) do
+        GenServer.cast(DataStore, {:setfollowers, user, followers})
+        {:noreply, state}
+    end
+
     def handle_cast({:publish, tweet}, state) do
         distTweets(tweet)
         {:noreply, state}

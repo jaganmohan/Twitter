@@ -21,9 +21,10 @@ defmodule TwitterClient.Simulator do
         dist = zipf(numCLients)
 
         for i <- 1..numClients do
-            client_name = "Client#{i}"
+            client_name = "User#{i}"
             client_name = String.to_atom(client_name)
             client_pid = TwitterClient.Client.start_link(client_name)
+            GenServer.cast(Server, {:register, client_name})
             :ets.insert(:clients_siml, {client_name, client_pid, dist[i]})
         end
 
@@ -35,7 +36,10 @@ defmodule TwitterClient.Simulator do
         # Continue above step until you create a list of numFollowed clients
         # for each client, then make a server call
 
+        beta = Application.get_env(:twitter, :beta)
+        total_followers = beta * num_clients
 
+        createFollowers(dist, numClients, total_followers)
     end
 
     def zipf(n, alpha = 1) do
@@ -45,8 +49,13 @@ defmodule TwitterClient.Simulator do
             acc = Map.put(acc, x, c/:math.pow(x,alpha)) end)
     end
 
-    def createFollowed(dist) do
-       #also do a server call to create followers list on the go 
+    def createFollowers(dist, numClients, total_followers) do
+        clients = Enum.map(1..numClients,fn x -> "User#{x}" end)
+        for i <- 1..numClients do
+            users = List.delete_at(clients, i-1)
+            followers = Enum.take_random(users, dist[i]*total_followers)
+            GenServer.cast(Server, {:setFollowers, "User#{i}", followers})
+        end
     end
 
     #write test cases to simulate the functions

@@ -17,6 +17,17 @@ defmodule TwitterClone.Datastore do
         {:ok, tables}
     end
 
+    def handle_cast({:register, user}, tables) do
+        clientsTbl = tables["clientsTbl"]
+        :ets.insert(:clients, {user, []})
+        {:noreply, tables}
+    end
+
+    def handle_cast({:setFollowers, user, followers}, state) do
+        :ets.insert(:clients, {user, followers})
+        {:noreply, tables}
+    end
+
     def handle_call({:getFollowers, user}, from, tables) do
         clientsTbl = tables["clientsTbl"]
         # TODO get followers

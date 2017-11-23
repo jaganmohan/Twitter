@@ -10,7 +10,15 @@ use Mix.Config
 
 # You can configure your application as:
 #
-#     config :twitter, key: :value
+    config :twitter, 
+        #mode: "server",
+        mode: "simulator",
+        cookie: :project4,
+        #alpha: 1 
+        num_clients: 1000
+        beta = 900
+       
+
 #
 # and access this configuration in your application as:
 #

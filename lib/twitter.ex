@@ -5,12 +5,15 @@ defmodule Twitter do
   """
 
   def start(_type, _args) do
-    IO.puts("Starting Twitter Application")
-    node = Application.get_env(:twitter, :node_type)
-    #if node == "server" do
-    TwitterClone.Appserver.start_link(name: TwitterServer)
-    #else if node =="simulator" do
-    TwitterClient.Supervisor.start_link(name: TwitterSimulator)
+    IO.puts("Starting Twitter Application")    
+    mode= Application.fetch_env!(:twitter, :mode)
+    IO.puts mode
+    case mode do
+      #insert case to choose between TwitterServer or TwitterSimulator
+      "server"->  TwitterClone.Appserver.start_link(name: TwitterServer)
+      "simulator"-> TwitterClient.Supervisor.start_link(name: TwitterSimulator)
+      _ -> IO.puts "Wrong mode."
+    end
   end
 
 end

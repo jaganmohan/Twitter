@@ -9,8 +9,8 @@ defmodule TwitterClient.Supervisor do
     def init(:ok) do
         #Supervisor.child_spec
         children = [
-            {TwitterClient.Simulator, name: Simulator},
+            {TwitterClient.Client, name: Client},
         ]
-        Supervisor.init(children, strategy: :one_for_one)
+        Supervisor.init(children, strategy: :simple_one_for_one)
     end
 end
