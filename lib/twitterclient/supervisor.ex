@@ -7,6 +7,7 @@ defmodule TwitterClient.Supervisor do
     end
 
     def init(:ok) do
+        #Supervisor.child_spec
         children = [
             {TwitterClient.Simulator, name: Simulator},
         ]

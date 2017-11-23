@@ -2,7 +2,7 @@ defmodule TwitterClient.Client do
     use GenServer
 
     def start_link(opts) do
-        GenServer.start_link(__MODULE__, :ok, opts, name: client_name)
+        GenServer.start_link(__MODULE__, :ok, opts)#, name: client_name)
     end
 
     def init(opts) do

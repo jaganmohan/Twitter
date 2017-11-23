@@ -1,4 +1,15 @@
 defmodule TwitterClient.Simulator do
+
+    def child_spec(opts) do
+        %{
+            id: Simulator,
+            start: {Simulator, :start_link, [[:hello]]},
+            restart: :permanent,
+            shutdown: 5000,
+            type: :worker
+        }    
+    end
+
     # ets table
     def init() do
         clientsTbl = :ets.new(:clients_siml, [:set, :private, :named_table, 
@@ -6,13 +17,14 @@ defmodule TwitterClient.Simulator do
 
         # create N client actors
         # get N from application config
-        numClients = Application.get_env(:twitter, num_clients)
-        
-        for i in 1..numClients do
+        numClients = Application.get_env(:twitter, :num_clients)
+        dist = zipf(numCLients)
+
+        for i <- 1..numClients do
             client_name = "Client#{i}"
             client_name = String.to_atom(client_name)
             client_pid = TwitterClient.Client.start_link(client_name)
-            :ets.insert({client_name, client_pid, 0})
+            :ets.insert(:clients_siml, {client_name, client_pid, dist[i]})
         end
 
         # for zipf distribution
@@ -26,10 +38,10 @@ defmodule TwitterClient.Simulator do
 
     end
 
-    def zipf(alpha, n) do
-        c = 1/Enum.reduce(1..n, 0, fn x -> 
+    def zipf(n, alpha = 1) do
+        c = 1/Enum.reduce(1..n, 0, fn (x, acc) -> 
             acc = acc + 1/:math.pow(x,alpha) end)
-        Enum.reduce(1..n, %{}, fn x -> 
+        Enum.reduce(1..n, %{}, fn (x, acc) -> 
             acc = Map.put(acc, x, c/:math.pow(x,alpha)) end)
     end
 
