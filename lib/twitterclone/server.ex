@@ -5,7 +5,7 @@ defmodule TwitterClone.Server do
         GenServer.start_link(__MODULE__, :ok, opts)
     end
 
-    def init(opts) do
+    def init(:ok) do
         IO.puts("Initializing Server .....")       
         #TODO state
         {:ok, %{}}

@@ -6,7 +6,7 @@ defmodule TwitterClone.Datastore do
         GenServer.start_link(__MODULE__, :ok, opts)
     end
 
-    def init(opts) do
+    def init(:ok) do
         clientsTbl = :ets.new(:clients, [:set, :protected, :named_table, 
             write_concurrency: true, read_concurrency: true])
         tweetsTbl = :ets.new(:tweets, [:set, :protected, :named_table, 
@@ -23,7 +23,7 @@ defmodule TwitterClone.Datastore do
         {:noreply, tables}
     end
 
-    def handle_cast({:setFollowers, user, followers}, state) do
+    def handle_cast({:setFollowers, user, followers}, tables) do
         :ets.insert(:clients, {user, followers})
         {:noreply, tables}
     end

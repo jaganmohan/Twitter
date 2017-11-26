@@ -14,7 +14,7 @@ defmodule Twitter.Mixfile do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      env: [num_clients: 1000, node_type: :server, cookie: :project4],
+      env: [],
       extra_applications: [:logger],
       mod: {Twitter, []},
     ]

@@ -1,48 +1,75 @@
 defmodule TwitterClient.Simulator do
+    use Task, restart: :permanent
+    # If you own the given module, please define a child_spec/1 function
+    # that receives an argument and returns a child specification as a map.
+    # For example:
+    
+    #     def child_spec(opts) do
+    #       %{
+    #         id: __MODULE__,
+    #         start: {__MODULE__, :start_link, [opts]},
+    #         type: :worker,
+    #         restart: :permanent,
+    #         shutdown: 500
+    #       }
+    #     end
+    
+    # Note that "use Agent", "use GenServer" and so on automatically define
+    # this function for you.
+    
+    # However, if you don't own the given module and it doesn't implement
+    # child_spec/1, instead of passing the module name directly as a supervisor
+    # child, you will have to pass a child specification as a map:
+    
+    #     %{
+    #       id: TwitterClient.Simulator,
+    #       start: {TwitterClient.Simulator, :start_link, [arg1, arg2]}
+    #     }
 
-    def child_spec(opts) do
-        %{
-            id: Simulator,
-            start: {Simulator, :start_link, [[:hello]]},
-            restart: :permanent,
-            shutdown: 5000,
-            type: :worker
-        }    
+    def start_link(opts) do
+        cookie = Application.get_env(:twitter, :cookie)        
+        node_name = "NodeSimulator"
+        node_name = String.to_atom(node_name)
+        {:ok, nodePID} = Node.start(node_name, :shortnames)
+        Node.set_cookie(node(), cookie)
+        Task.start_link(__MODULE__, :init, opts)
     end
 
     # ets table
-    def init() do
+    def init(args) do
+        IO.puts("Initializing simulator...")
         clientsTbl = :ets.new(:clients_siml, [:set, :private, :named_table, 
         read_concurrency: true])
+        numClients = Application.get_env(:twitter, :num_clients)
+        beta = Application.get_env(:twitter, :beta)
 
         # create N client actors
         # get N from application config
-        numClients = Application.get_env(:twitter, :num_clients)
-        dist = zipf(numCLients)
+        dist = zipf(numClients)
+        IO.puts("zipf distribution: #{inspect(dist)}")
 
         for i <- 1..numClients do
             client_name = "User#{i}"
             client_name = String.to_atom(client_name)
-            client_pid = TwitterClient.Client.start_link(client_name)
-            GenServer.cast(Server, {:register, client_name})
-            :ets.insert(:clients_siml, {client_name, client_pid, dist[i]})
+            clientPID = TwitterClient.Client.start_link([client_name])
+
+            # connect to server node and register client process
+            #GenServer.cast(Server, {:register, client_name})
+
+            :ets.insert(:clients_siml, {client_name, clientPID, dist[i]})
         end
 
-        # for zipf distribution
-        # for each client number as rank lets create zipf probability distribution
-        # randomly select num of followed numFollowed from 1..numClients
-        # create list of followed by getting a client over created distribution
-        # Remove the client from list of all client list and repeat above step
-        # Continue above step until you create a list of numFollowed clients
-        # for each client, then make a server call
+        #creating total num of followers
+        v = 0.9*numClients |> round
+        v = Enum.random(v..numClients)
+        total_followers = v/dist[1] |> round
+        IO.puts("Total number of followers: #{total_followers}")
 
-        beta = Application.get_env(:twitter, :beta)
-        total_followers = beta * num_clients
-
+        IO.puts("Sum of zipf probabilities: #{Enum.reduce(dist, 0, fn({k, v}, acc) -> v + acc end)}")
         createFollowers(dist, numClients, total_followers)
     end
 
-    def zipf(n, alpha = 1) do
+    def zipf(n, alpha \\ 1) do
         c = 1/Enum.reduce(1..n, 0, fn (x, acc) -> 
             acc = acc + 1/:math.pow(x,alpha) end)
         Enum.reduce(1..n, %{}, fn (x, acc) -> 
@@ -53,8 +80,9 @@ defmodule TwitterClient.Simulator do
         clients = Enum.map(1..numClients,fn x -> "User#{x}" end)
         for i <- 1..numClients do
             users = List.delete_at(clients, i-1)
-            followers = Enum.take_random(users, dist[i]*total_followers)
-            GenServer.cast(Server, {:setFollowers, "User#{i}", followers})
+            followers = Enum.take_random(users, dist[i]*total_followers|>round)
+            IO.inspect("User{i} followers: #{inspect(followers)}")
+            #GenServer.cast(Server, {:setFollowers, "User#{i}", followers})
         end
     end
 

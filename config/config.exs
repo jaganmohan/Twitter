@@ -15,8 +15,8 @@ use Mix.Config
         mode: "simulator",
         cookie: :project4,
         #alpha: 1 
-        num_clients: 1000
-        beta = 900
+        num_clients: 1000,
+        beta: 900
        
 
 #
