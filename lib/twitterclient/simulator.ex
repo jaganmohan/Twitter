@@ -1,5 +1,5 @@
 defmodule TwitterClient.Simulator do
-    use Task, restart: :permanent
+    use Task#, restart: :permanent
     # If you own the given module, please define a child_spec/1 function
     # that receives an argument and returns a child specification as a map.
     # For example:
@@ -26,12 +26,7 @@ defmodule TwitterClient.Simulator do
     #       start: {TwitterClient.Simulator, :start_link, [arg1, arg2]}
     #     }
 
-    def start_link(opts) do
-        cookie = Application.get_env(:twitter, :cookie)        
-        node_name = "NodeSimulator"
-        node_name = String.to_atom(node_name)
-        {:ok, nodePID} = Node.start(node_name, :shortnames)
-        Node.set_cookie(node(), cookie)
+    def start_link(opts) do        
         Task.start_link(__MODULE__, :init, opts)
     end
 
@@ -42,19 +37,19 @@ defmodule TwitterClient.Simulator do
         read_concurrency: true])
         numClients = Application.get_env(:twitter, :num_clients)
         beta = Application.get_env(:twitter, :beta)
+        server = :global.whereis_name(:Server)
 
         # create N client actors
         # get N from application config
         dist = zipf(numClients)
-        IO.puts("zipf distribution: #{inspect(dist)}")
+        #IO.puts("zipf distribution: #{inspect(dist)}")
 
         for i <- 1..numClients do
             client_name = "User#{i}"
+            # register client process
+            GenServer.call(server, {:register, client_name})
             client_name = String.to_atom(client_name)
-            clientPID = TwitterClient.Client.start_link([client_name])
-
-            # connect to server node and register client process
-            #GenServer.cast(Server, {:register, client_name})
+            clientPID = TwitterClient.Client.start_link([name: {:global, client_name}])
 
             :ets.insert(:clients_siml, {client_name, clientPID, dist[i]})
         end
@@ -64,9 +59,11 @@ defmodule TwitterClient.Simulator do
         v = Enum.random(v..numClients)
         total_followers = v/dist[1] |> round
         IO.puts("Total number of followers: #{total_followers}")
-
         IO.puts("Sum of zipf probabilities: #{Enum.reduce(dist, 0, fn({k, v}, acc) -> v + acc end)}")
-        createFollowers(dist, numClients, total_followers)
+        createFollowers(server, dist, numClients, total_followers)
+
+        simulateTweets(numClients)
+
     end
 
     def zipf(n, alpha \\ 1) do
@@ -76,16 +73,29 @@ defmodule TwitterClient.Simulator do
             acc = Map.put(acc, x, c/:math.pow(x,alpha)) end)
     end
 
-    def createFollowers(dist, numClients, total_followers) do
+    def createFollowers(server, dist, numClients, total_followers) do
         clients = Enum.map(1..numClients,fn x -> "User#{x}" end)
         for i <- 1..numClients do
             users = List.delete_at(clients, i-1)
             followers = Enum.take_random(users, dist[i]*total_followers|>round)
-            IO.inspect("User{i} followers: #{inspect(followers)}")
-            #GenServer.cast(Server, {:setFollowers, "User#{i}", followers})
+            #IO.inspect("User#{i} followers: #{inspect(followers)}")
+            GenServer.call(server, {:setFollowers, "User#{i}", followers})
         end
     end
 
     #write test cases to simulate the functions
+    def simulateTweets(numClients) do
+        username = "User#{:crypto.rand_uniform(1, numClients+1)}"
+        tweetID = username<>:crypto.strong_rand_bytes(10)|>Base.encode16
+        tweet = %Util.Tweet{
+            id: tweetID,
+            hashtags: ["#hello"],
+            mentions: ["@#{username}"],
+            msg: "#hello I am feeling good @#{username}",
+            origin: username
+        }
+        user = :global.whereis_name(String.to_atom(username))
+        GenServer.cast(user, {:publishTweet, username, tweet})
+    end
     
 end

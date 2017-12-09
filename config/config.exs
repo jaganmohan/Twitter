@@ -11,8 +11,8 @@ use Mix.Config
 # You can configure your application as:
 #
     config :twitter, 
-        #mode: "server",
-        mode: "simulator",
+        mode: "server",
+        #mode: "simulator",
         cookie: :project4,
         #alpha: 1 
         num_clients: 1000,

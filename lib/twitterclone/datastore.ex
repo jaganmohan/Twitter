@@ -13,14 +13,52 @@ defmodule TwitterClone.Datastore do
             write_concurrency: true, read_concurrency: true])
         clientTweets = :ets.new(:client_tweets, [:set, :protected, :named_table, 
             write_concurrency: true, read_concurrency: true])
-        tables = %{"clientsTbl": clientsTbl, "tweetsTbl": tweetsTbl, "clientTweets": clientTweets}
+        hashTweets = :ets.new(:hashtag_tweets, [:set, :protected, :named_table, 
+            write_concurrency: true, read_concurrency: true])
+        mentionTweets = :ets.new(:mention_tweets, [:set, :protected, :named_table, 
+            write_concurrency: true, read_concurrency: true])
+        tables = %{"clientsTbl": clientsTbl, "tweetsTbl": tweetsTbl, "clientTweets": clientTweets,
+            "hashTweets": hashTweets, "mentionTweets": mentionTweets}
         {:ok, tables}
     end
 
-    def handle_cast({:register, user}, tables) do
-        clientsTbl = tables["clientsTbl"]
-        :ets.insert(:clients, {user, []})
-        {:noreply, tables}
+    def handle_call({:register, user}, from, tables) do
+        true = :ets.insert(:clients, {user, []})
+        true = :ets.insert(:client_tweets, {user, []})
+        {:reply, true, tables}
+    end
+
+    def handle_call({:addTweet, user, tweet}, from, tables) do
+        {_, tweetList} = hd(:ets.lookup(:client_tweets, user))
+        IO.inspect(tweetList)
+        tweetList = [tweet.id | tweetList]
+        :ets.insert(:client_tweets, {user, tweetList})
+
+        for tag <- tweet.hashtags do
+            tweetList = :ets.lookup(:hashtag_tweets, tag)
+            if length(tweetList) == 0 do
+                :ets.insert(:hashtag_tweets, {tag, tweet.id})
+            else
+                tweetList = hd(tweetList)
+                {_, tweetList} = tweetList
+                tweetList = [tweet.id | tweetList]
+                :ets.insert(:hashtag_tweets, {tag, tweetList})
+            end
+        end
+
+        for mention <- tweet.mentions do
+            tweetList = :ets.lookup(:mention_tweets, mention)
+            if length(tweetList) == 0 do
+                :ets.insert(:mention_tweets, {mention, tweet.id})
+            else
+                tweetList = hd(tweetList)
+                {_, tweetList} = tweetList
+                tweetList = [tweet.id | tweetList]
+                :ets.insert(:mention_tweets, {mention, mention})
+            end
+        end
+
+        {:reply, :ok, tables}
     end
 
     def handle_cast({:setFollowers, user, followers}, tables) do
@@ -29,9 +67,8 @@ defmodule TwitterClone.Datastore do
     end
 
     def handle_call({:getFollowers, user}, from, tables) do
-        clientsTbl = tables["clientsTbl"]
         # TODO get followers
-        followers = []
+        {u, followers} = hd(:ets.lookup(:clients, user))
         {:reply, followers, tables}
     end
 
